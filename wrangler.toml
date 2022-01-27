@@ -1,0 +1,17 @@
+name = "usurai"
+type = "javascript"
+zone_id = ""
+account_id = ""
+route = ""
+workers_dev = true
+compatibility_date = "2022-01-26"
+
+[build]
+command = "yarn build"
+
+[build.upload]
+format = "service-worker"
+
+[site]
+bucket = "./frontend/build"
+entry-point = "."
