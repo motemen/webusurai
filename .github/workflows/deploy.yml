@@ -18,4 +18,6 @@ jobs:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           publish: false
           postCommands: |
+            yarn install
+            ( cd frontend && yarn install )
             yarn deploy
