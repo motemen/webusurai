@@ -6,8 +6,9 @@
     "build": "webpack",
     "format": "prettier --write  '*.{json,js}' 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",
     "lint": "eslint --max-warnings=0 src && prettier --check '*.{json,js}' 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",
-    "test": "jest --config jestconfig.json --verbose",
-    "test:frontend": "( cd frontend && yarn test )",
+    "test": "concurrently 'yarn:test:*'",
+    "test:workers": "jest --config jestconfig.json --verbose",
+    "test:frontend": "( cd frontend && yarn test --watchAll=false )",
     "start": "concurrently --names 'workers,frontend' 'wrangler dev' 'cd frontend && yarn start'",
     "deploy": "( cd frontend && yarn build ) && wrangler publish"
   },
