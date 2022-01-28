@@ -13,11 +13,13 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - run: |
+          yarn install
+          cd frontend && yarn install
+
+      - run: |
+          cd frontend && yarn build
+
       - uses: cloudflare/wrangler-action@1.3.0
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
-          publish: false
-          postCommands: |
-            yarn install
-            ( cd frontend && yarn install )
-            yarn deploy
