@@ -1,7 +1,7 @@
 name = "usurai"
 type = "javascript"
 zone_id = ""
-account_id = ""
+account_id = "e800d9852cf9648c351610aa80501788"
 route = ""
 workers_dev = true
 compatibility_date = "2022-01-26"
