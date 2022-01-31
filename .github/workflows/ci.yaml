@@ -1,4 +1,4 @@
-name: Test
+name: CI
 
 on:
   push:
@@ -20,6 +20,7 @@ jobs:
           cd frontend && yarn install
 
       - run: |
+          yarn build
           yarn test
 
   deploy:
