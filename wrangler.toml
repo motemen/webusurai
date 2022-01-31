@@ -7,7 +7,7 @@ workers_dev = true
 compatibility_date = "2022-01-26"
 
 kv_namespaces = [
-  { binding = "KV", id = "8482f22281a94e48a3da3c6ee87168aa" }
+  { binding = "KV", id = "8482f22281a94e48a3da3c6ee87168aa", preview_id = "060768c26fd24b2b837a9062066bd903" }
 ]
 
 [build]

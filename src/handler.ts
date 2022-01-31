@@ -30,25 +30,29 @@ function makeRandom(s: number) {
 }
 
 const FROZEN: State = { state: 'FROZEN' }
-const BROKEN = (at: Date): State => ({
+const BROKEN = (brokenAtEpochMillis: number): State => ({
   state: 'BROKEN',
-  brokenAtEpochMillis: at.getTime(),
+  brokenAtEpochMillis,
 })
 const MELTED: State = { state: 'MELTED' }
 
 const ONE_HOUR = 1000 * 60 * 60
 const ONE_DAY = ONE_HOUR * 24
 
-async function getState(now: Date): Promise<State> {
+const TIME_ZONE = 'Asia/Tokyo'
+
+async function getState(now: number): Promise<State> {
   // 0300-0600: どこかのタイミングで MELTED -> FROZEN に、そして BROKEN にすることが可能
   // 0600-1200: FROZEN, BROKEN にすることが可能
   // 1200-2700: MELTED
 
-  const seed = Math.floor(now.getTime() / ONE_DAY)
-  const random = makeRandom(seed)
-  const hours = now.getHours()
+  const nowInJapan = utcToZonedTime(now, TIME_ZONE)
 
-  const dayStart = startOfDay(now)
+  const seed = Math.floor(nowInJapan.getTime() / ONE_DAY)
+  const random = makeRandom(seed)
+  const hours = nowInJapan.getHours()
+
+  const dayStart = startOfDay(nowInJapan)
 
   // 0300-0600 の間で freeze する
   const freezeAtHour = 3 + (6 - 3) * random()
@@ -64,12 +68,9 @@ async function getState(now: Date): Promise<State> {
       return FROZEN
     }
 
-    const brokenAt = utcToZonedTime(
-      new Date(parseInt(brokenAtTime)),
-      'Asia/Tokyo',
-    )
+    const brokenAt = utcToZonedTime(parseInt(brokenAtTime), TIME_ZONE)
     if (freezeAt <= brokenAt) {
-      return BROKEN(brokenAt)
+      return BROKEN(parseInt(brokenAtTime))
     }
 
     return FROZEN
@@ -78,14 +79,29 @@ async function getState(now: Date): Promise<State> {
   }
 }
 
+async function updateStateBroken(now: number): Promise<boolean> {
+  const state = await getState(now)
+
+  console.log({
+    now,
+  })
+
+  if (state.state === 'FROZEN') {
+    await KV.put(BROKEN_AT_KEY, now.toString())
+    return true
+  }
+
+  return false
+}
+
 export async function handleEvent(event: FetchEvent): Promise<Response> {
   const request = event.request
-  const now = utcToZonedTime(new Date(), 'Asia/Tokyo')
+  const now = Date.now()
   const url = new URL(request.url)
   if (url.pathname === '/state') {
     return new Response(JSON.stringify(await getState(now)))
   } else if (url.pathname === '/break' && request.method === 'POST') {
-    return new Response('Not Found', { status: 404 })
+    return new Response(JSON.stringify(await updateStateBroken(now)))
   } else {
     try {
       const page = await getAssetFromKV(event)

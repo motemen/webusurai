@@ -1,20 +1,36 @@
 import React from 'react'
-import useSWR, { mutate } from 'swr'
+import useSWR, { KeyedMutator } from 'swr'
 import { State as UsuraiState } from '../../src/types'
+import formatDistanceToNow from 'date-fns/formatDistanceToNow'
+import ja from 'date-fns/locale/ja'
 
-const Usurai = ({ state }: { state: UsuraiState }) => {
-  // TODO: mutate
+const Usurai = ({
+  state,
+  mutateState,
+}: {
+  state: UsuraiState
+  mutateState: KeyedMutator<UsuraiState>
+}) => {
   switch (state.state) {
     case 'BROKEN':
-      return <p>氷は割れています (at: {state.brokenAtEpochMillis})</p>
+      return (
+        <p>
+          氷は割れています (
+          {formatDistanceToNow(state.brokenAtEpochMillis, {
+            addSuffix: true,
+            locale: ja,
+          })}
+          )
+        </p>
+      )
     case 'FROZEN':
       return (
         <>
           <p>凍っています</p>
           <button
             onClick={async () => {
-              fetch('/break', { method: 'POST' })
-              mutate('/state')
+              await fetch('/break', { method: 'POST' })
+              await mutateState()
             }}
           >
             割る
@@ -29,7 +45,7 @@ const Usurai = ({ state }: { state: UsuraiState }) => {
 }
 
 function App() {
-  const { data, error } = useSWR('/state', async (path) => {
+  const { data, error, mutate } = useSWR('/state', async (path) => {
     const resp = await fetch(path)
     return (await resp.json()) as unknown as UsuraiState
   })
@@ -44,7 +60,7 @@ function App() {
             エラー: <code>{`${error}`}</code>
           </p>
         ) : data ? (
-          <Usurai state={data} />
+          <Usurai state={data} mutateState={mutate} />
         ) : (
           <p>...</p>
         )}
