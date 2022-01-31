@@ -1,22 +1,62 @@
-import { handleEvent } from '../src/handler'
+import { getState } from '../src/handler'
 import makeServiceWorkerEnv from 'service-worker-mock'
+import parseISO from 'date-fns/parseISO'
 
 declare let global: unknown
+declare function getMiniflareBindings(): { KV: KVNamespace }
 
-describe('handle', () => {
+let KV: KVNamespace
+
+describe('getState', () => {
   beforeEach(() => {
     Object.assign(global, makeServiceWorkerEnv())
     jest.resetModules()
+    ;({ KV } = getMiniflareBindings())
   })
 
-  test('handle GET', async () => {
-    const ev = {
-      request: new Request('/state', { method: 'GET' }),
-    }
-    const result = await handleEvent(ev as unknown as FetchEvent)
-    expect(result.status).toEqual(200)
-    expect(async () => {
-      await result.json()
-    }).not.toThrow()
+  test('MELTED at 15:00', async () => {
+    const now = parseISO('2022-02-01T15:00:00+09:00')
+    const state = await getState(now.getTime())
+    expect(state.state).toBe('MELTED')
+  })
+
+  test('FROZEN at 06:00', async () => {
+    const now = parseISO('2022-02-01T06:00:00+09:00')
+    const state = await getState(now.getTime())
+    expect(state.state).toBe('FROZEN')
+  })
+
+  test('FROZEN at 06:00 if broken before freezing', async () => {
+    await KV.put(
+      'broken_at',
+      parseISO('2022-02-01 03:00:00+09:00').getTime().toString(),
+    )
+    const now = parseISO('2022-02-01T06:00:00+09:00')
+    const state = await getState(now.getTime())
+    expect(state.state).toBe('FROZEN')
+  })
+
+  test('BROKEN at 06:00 if broken after freezing', async () => {
+    await KV.put(
+      'broken_at',
+      parseISO('2022-02-01 03:15:00+09:00').getTime().toString(),
+    )
+    const now = parseISO('2022-02-01T06:00:00+09:00')
+    const state = await getState(now.getTime())
+    expect(state.state).toBe('BROKEN')
+    expect(state).toHaveProperty(
+      'brokenAtEpochMillis',
+      parseISO('2022-02-01 03:15:00+09:00').getTime(),
+    )
+  })
+
+  test('MELTED at 20:00 even if broken after freezing', async () => {
+    await KV.put(
+      'broken_at',
+      parseISO('2022-02-01 05:15:00+09:00').getTime().toString(),
+    )
+    const now = parseISO('2022-02-01T20:00:00+09:00')
+    const state = await getState(now.getTime())
+    expect(state.state).toBe('MELTED')
   })
 })

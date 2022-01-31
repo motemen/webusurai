@@ -1,0 +1,14 @@
+{
+  "transform": {
+    "^.+\\.tsx?$": "ts-jest",
+    "^.+\\.js$": "babel-jest"
+  },
+  "transformIgnorePatterns": ["node_modules/(?!(random-seedable)/)"],
+  "testRegex": "/test/.*\\.test\\.ts$",
+  "collectCoverageFrom": ["src/**/*.{ts,js}", "!src/index.ts", "!**/*.d.ts"],
+  "testEnvironment": "miniflare",
+  "testEnvironmentOptions": {
+    "bindings": {},
+    "kvNamespaces": ["KV"]
+  }
+}

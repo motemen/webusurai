@@ -1,33 +1,13 @@
-import utcToZonedTime from 'date-fns-tz/utcToZonedTime'
-import addHours from 'date-fns/addHours'
-import startOfDay from 'date-fns/startOfDay'
-import { getAssetFromKV } from '@cloudflare/kv-asset-handler'
 import { State } from './types'
+import { getAssetFromKV } from '@cloudflare/kv-asset-handler'
+import utcToZonedTime from 'date-fns-tz/utcToZonedTime'
+import startOfDay from 'date-fns/startOfDay'
+import addMilliseconds from 'date-fns/addMilliseconds'
+import { XORShift128 } from 'random-seedable'
 
 declare let KV: KVNamespace
-const BROKEN_AT_KEY = 'broken_at'
 
-// https://lowreal.net/2019/06/20/1
-// prettier-ignore
-function makeRandom(s: number) {
-	// Xorshift128 (init seed with Xorshift32)
-	s ^= s << 13; s ^= 2 >>> 17; s ^= s << 5;
-	let x = 123456789^s;
-	s ^= s << 13; s ^= 2 >>> 17; s ^= s << 5;
-	let y = 362436069^s;
-	s ^= s << 13; s ^= 2 >>> 17; s ^= s << 5;
-	let z = 521288629^s;
-	s ^= s << 13; s ^= 2 >>> 17; s ^= s << 5;
-	let w = 88675123^s;
-	let t;
-  return function(): number {
-		t = x ^ (x << 11);
-		x = y; y = z; z = w;
-		// >>>0 means 'cast to uint32'
-		w = ((w ^ (w >>> 19)) ^ (t ^ (t >>> 8)))>>>0;
-		return w / 0x100000000;
-  }
-}
+const BROKEN_AT_KEY = 'broken_at'
 
 const FROZEN: State = { state: 'FROZEN' }
 const BROKEN = (brokenAtEpochMillis: number): State => ({
@@ -41,7 +21,7 @@ const ONE_DAY = ONE_HOUR * 24
 
 const TIME_ZONE = 'Asia/Tokyo'
 
-async function getState(now: number): Promise<State> {
+export async function getState(now: number): Promise<State> {
   // 0300-0600: どこかのタイミングで MELTED -> FROZEN に、そして BROKEN にすることが可能
   // 0600-1200: FROZEN, BROKEN にすることが可能
   // 1200-2700: MELTED
@@ -49,14 +29,15 @@ async function getState(now: number): Promise<State> {
   const nowInJapan = utcToZonedTime(now, TIME_ZONE)
 
   const seed = Math.floor(nowInJapan.getTime() / ONE_DAY)
-  const random = makeRandom(seed)
+  const random = new XORShift128(seed)
+
   const hours = nowInJapan.getHours()
 
   const dayStart = startOfDay(nowInJapan)
 
   // 0300-0600 の間で freeze する
-  const freezeAtHour = 3 + (6 - 3) * random()
-  const freezeAt = addHours(dayStart, freezeAtHour)
+  const freezeAtHour = 3 + (6 - 3) * random.float()
+  const freezeAt = addMilliseconds(dayStart, freezeAtHour * ONE_HOUR)
 
   console.log({ hours, freezeAtHour })
 
@@ -69,6 +50,7 @@ async function getState(now: number): Promise<State> {
     }
 
     const brokenAt = utcToZonedTime(parseInt(brokenAtTime), TIME_ZONE)
+    console.log({ freezeAt, brokenAt })
     if (freezeAt <= brokenAt) {
       return BROKEN(parseInt(brokenAtTime))
     }

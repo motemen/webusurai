@@ -1,0 +1,43 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-node@v2.5.1
+
+      - run: |
+          yarn install
+          cd frontend && yarn install
+
+      - run: |
+          yarn test
+
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-node@v2.5.1
+
+      - run: |
+          yarn install
+
+      - run: |
+          cd frontend && yarn install && yarn build
+
+      - uses: cloudflare/wrangler-action@1.3.0
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
