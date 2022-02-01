@@ -3,7 +3,7 @@ import { getAssetFromKV } from '@cloudflare/kv-asset-handler'
 import utcToZonedTime from 'date-fns-tz/utcToZonedTime'
 import startOfDay from 'date-fns/startOfDay'
 import addMilliseconds from 'date-fns/addMilliseconds'
-import { XORShift128 } from 'random-seedable'
+import seedrandom from 'seedrandom'
 
 declare let KV: KVNamespace
 
@@ -29,14 +29,14 @@ export async function getState(now: number): Promise<State> {
   const nowInJapan = utcToZonedTime(now, TIME_ZONE)
 
   const seed = Math.floor(nowInJapan.getTime() / ONE_DAY)
-  const random = new XORShift128(seed)
+  const random = seedrandom(seed.toString())
 
   const hours = nowInJapan.getHours()
 
   const dayStart = startOfDay(nowInJapan)
 
   // 0300-0600 の間で freeze する
-  const freezeAtHour = 3 + (6 - 3) * random.float()
+  const freezeAtHour = 3 + (6 - 3) * random.double()
   const freezeAt = addMilliseconds(dayStart, freezeAtHour * ONE_HOUR)
 
   console.log({ hours, freezeAtHour })

@@ -10,6 +10,7 @@
     "test:workers": "jest",
     "test:frontend": "( cd frontend && yarn test --watchAll=false )",
     "start": "concurrently --names 'workers,frontend' 'miniflare' 'cd frontend && yarn start'",
+    "start:dev": "concurrently --names 'workers,frontend' 'wrangler dev' 'cd frontend && yarn start'",
     "deploy": "( cd frontend && yarn build ) && wrangler publish"
   },
   "author": "motemen <motemen@gmail.com>",
@@ -22,14 +23,12 @@
     ]
   },
   "devDependencies": {
-    "@babel/core": "^7.16.12",
-    "@babel/preset-env": "^7.16.11",
     "@cloudflare/workers-types": "^3.3.1",
     "@types/jest": "^26.0.23",
+    "@types/seedrandom": "^3.0.1",
     "@types/service-worker-mock": "^2.0.1",
     "@typescript-eslint/eslint-plugin": "^4.16.1",
     "@typescript-eslint/parser": "^4.16.1",
-    "babel-jest": "^27.4.6",
     "concurrently": "^7.0.0",
     "eslint": "^7.21.0",
     "eslint-config-prettier": "^8.1.0",
@@ -49,7 +48,6 @@
     "@cloudflare/kv-asset-handler": "^0.2.0",
     "date-fns": "^2.28.0",
     "date-fns-tz": "^1.2.2",
-    "random": "^3.0.6",
-    "random-seedable": "^1.0.8"
+    "seedrandom": "^3.0.5"
   }
 }

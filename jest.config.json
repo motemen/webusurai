@@ -1,9 +1,7 @@
 {
   "transform": {
-    "^.+\\.tsx?$": "ts-jest",
-    "^.+\\.js$": "babel-jest"
+    "^.+\\.tsx?$": "ts-jest"
   },
-  "transformIgnorePatterns": ["node_modules/(?!(random-seedable)/)"],
   "testRegex": "/test/.*\\.test\\.ts$",
   "collectCoverageFrom": ["src/**/*.{ts,js}", "!src/index.ts", "!**/*.d.ts"],
   "testEnvironment": "miniflare",

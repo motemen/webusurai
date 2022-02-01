@@ -39,14 +39,14 @@ describe('getState', () => {
   test('BROKEN at 06:00 if broken after freezing', async () => {
     await KV.put(
       'broken_at',
-      parseISO('2022-02-01 03:15:00+09:00').getTime().toString(),
+      parseISO('2022-02-01 03:45:00+09:00').getTime().toString(), // freezeAt: 03:44
     )
     const now = parseISO('2022-02-01T06:00:00+09:00')
     const state = await getState(now.getTime())
     expect(state.state).toBe('BROKEN')
     expect(state).toHaveProperty(
       'brokenAtEpochMillis',
-      parseISO('2022-02-01 03:15:00+09:00').getTime(),
+      parseISO('2022-02-01 03:45:00+09:00').getTime(),
     )
   })
 
