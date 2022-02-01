@@ -1,10 +1,15 @@
 import React from 'react'
 import useSWR, { mutate } from 'swr'
-import { State as UsuraiState } from '../../src/types'
+import { State as UsuraiState, Location, GetStateResult } from '../../src/types'
 import formatDistanceToNow from 'date-fns/formatDistanceToNow'
 import ja from 'date-fns/locale/ja'
 
-export const Usurai = ({ state }: { state: UsuraiState }) => {
+interface UsuraiProps {
+  state: UsuraiState
+  locKey: keyof Location
+}
+
+export const Usurai = ({ state, locKey }: UsuraiProps) => {
   switch (state.state) {
     case 'BROKEN':
       return (
@@ -23,7 +28,13 @@ export const Usurai = ({ state }: { state: UsuraiState }) => {
           <p>凍っています</p>
           <button
             onClick={async () => {
-              await fetch('/break', { method: 'POST' })
+              await fetch('/break', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ locKey }),
+              })
               await mutate('/state')
             }}
           >
@@ -41,7 +52,7 @@ export const Usurai = ({ state }: { state: UsuraiState }) => {
 function App() {
   const { data, error } = useSWR('/state', async (path) => {
     const resp = await fetch(path)
-    return (await resp.json()) as unknown as UsuraiState
+    return (await resp.json()) as unknown as GetStateResult
   })
 
   return (
@@ -53,7 +64,16 @@ function App() {
             エラー: <code>{`${error}`}</code>
           </p>
         ) : data ? (
-          <Usurai state={data} />
+          data.states.map((state) => {
+            return (
+              <>
+                <h2>
+                  {state.locKey}: {data.loc[state.locKey]}
+                </h2>
+                <Usurai state={state.state} locKey={state.locKey} />
+              </>
+            )
+          })
         ) : (
           <p>...</p>
         )}

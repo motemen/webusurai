@@ -10,7 +10,7 @@ describe('Usurai', () => {
     const state: State = {
       state: 'FROZEN',
     }
-    render(<Usurai state={state} />)
+    render(<Usurai state={state} locKey={'country'} />)
     expect(screen.getByText(/凍っています/)).toBeInTheDocument()
     const button = screen.getByText(/割る/)
     expect(button).toBeInTheDocument()
@@ -25,7 +25,7 @@ describe('Usurai', () => {
     const state: State = {
       state: 'MELTED',
     }
-    render(<Usurai state={state} />)
+    render(<Usurai state={state} locKey={'country'} />)
     expect(screen.getByText(/氷は溶けています…/)).toBeInTheDocument()
   })
 
@@ -37,7 +37,7 @@ describe('Usurai', () => {
     Date.now = jest.fn(() => {
       return Date.UTC(2022, 1, 1, 2, 0, 0)
     })
-    render(<Usurai state={state} />)
+    render(<Usurai state={state} locKey={'country'} />)
     expect(screen.getByText(/氷は割れています/)).toBeInTheDocument()
     expect(screen.getByText(/約2時間前/)).toBeInTheDocument()
   })

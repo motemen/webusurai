@@ -1,4 +1,4 @@
-import { State } from './types'
+import { State, Location, GetStateResult, PostBreakPayload } from './types'
 import { getAssetFromKV } from '@cloudflare/kv-asset-handler'
 import utcToZonedTime from 'date-fns-tz/utcToZonedTime'
 import startOfDay from 'date-fns/startOfDay'
@@ -6,6 +6,8 @@ import addMilliseconds from 'date-fns/addMilliseconds'
 import seedrandom from 'seedrandom'
 
 declare let KV: KVNamespace
+
+const LOCATION_KEYS: (keyof Location)[] = ['country', 'region', 'city']
 
 const BROKEN_AT_KEY = 'broken_at'
 
@@ -21,15 +23,20 @@ const ONE_DAY = ONE_HOUR * 24
 
 const TIME_ZONE = 'Asia/Tokyo'
 
-export async function getState(now: number): Promise<State> {
+export async function getState(
+  now: number,
+  loc: Location,
+  locKey: keyof Location,
+): Promise<State> {
   // 0300-0600: どこかのタイミングで MELTED -> FROZEN に、そして BROKEN にすることが可能
   // 0600-1200: FROZEN, BROKEN にすることが可能
   // 1200-2700: MELTED
 
   const nowInJapan = utcToZonedTime(now, TIME_ZONE)
 
-  const seed = Math.floor(nowInJapan.getTime() / ONE_DAY)
-  const random = seedrandom(seed.toString())
+  const dayInSeconds = Math.floor(nowInJapan.getTime() / ONE_DAY)
+  const seed = `${locKey}:${loc[locKey]}:${dayInSeconds}`
+  const random = seedrandom(seed)
 
   const hours = nowInJapan.getHours()
 
@@ -39,7 +46,7 @@ export async function getState(now: number): Promise<State> {
   const freezeAtHour = 3 + (6 - 3) * random.double()
   const freezeAt = addMilliseconds(dayStart, freezeAtHour * ONE_HOUR)
 
-  console.log({ hours, freezeAtHour })
+  console.log({ seed, hours, freezeAtHour })
 
   if (0 <= hours && hours < 3) {
     return MELTED
@@ -61,8 +68,12 @@ export async function getState(now: number): Promise<State> {
   }
 }
 
-async function updateStateBroken(now: number): Promise<boolean> {
-  const state = await getState(now)
+async function updateStateBroken(
+  now: number,
+  loc: Location,
+  locKey: keyof Location,
+): Promise<boolean> {
+  const state = await getState(now, loc, locKey)
 
   console.log({
     now,
@@ -80,10 +91,26 @@ export async function handleEvent(event: FetchEvent): Promise<Response> {
   const request = event.request
   const now = Date.now()
   const url = new URL(request.url)
+  const loc: Location = {
+    country: request.cf?.country ?? null,
+    region: request.cf?.region ?? null,
+    city: request.cf?.city ?? null,
+  }
   if (url.pathname === '/state') {
-    return new Response(JSON.stringify(await getState(now)))
+    const states = await Promise.all(
+      LOCATION_KEYS.map(async (locKey) => ({
+        locKey,
+        state: await getState(now, loc, locKey),
+      })),
+    )
+    const result: GetStateResult = { states, loc }
+    return new Response(JSON.stringify(result))
   } else if (url.pathname === '/break' && request.method === 'POST') {
-    return new Response(JSON.stringify(await updateStateBroken(now)))
+    const body: PostBreakPayload = await request.json()
+    return new Response(
+      JSON.stringify(await updateStateBroken(now, loc, body.locKey)),
+    )
+    return new Response(JSON.stringify('TODO'))
   } else {
     try {
       const page = await getAssetFromKV(event)
