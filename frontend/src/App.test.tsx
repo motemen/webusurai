@@ -10,15 +10,14 @@ describe('Usurai', () => {
     const state: State = {
       state: 'FROZEN',
     }
-    render(<Usurai state={state} locKey={'country'} onBreak={() => {}} />)
+    const onBreak = jest.fn()
+    render(<Usurai state={state} locKey={'country'} onBreak={onBreak} />)
     expect(screen.getByText(/凍っています/)).toBeInTheDocument()
     const button = screen.getByText(/割る/)
     expect(button).toBeInTheDocument()
 
-    const spy = jest.spyOn(global, 'fetch')
     fireEvent.click(button)
-    expect(spy).toHaveBeenCalled()
-    spy.mockRestore()
+    expect(onBreak).toHaveBeenCalled()
   })
 
   it('MELTED', () => {
