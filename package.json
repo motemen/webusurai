@@ -9,7 +9,7 @@
     "test": "concurrently 'yarn:test:*'",
     "test:workers": "jest",
     "test:frontend": "( cd frontend && yarn test --watchAll=false )",
-    "start": "concurrently --names 'workers,frontend' 'miniflare' 'cd frontend && yarn start'",
+    "start": "concurrently --names 'workers,frontend' 'miniflare --build-watch-path src' 'cd frontend && yarn start'",
     "start:dev": "concurrently --names 'workers,frontend' 'wrangler dev' 'cd frontend && yarn start'",
     "deploy": "( cd frontend && yarn build ) && wrangler publish"
   },
