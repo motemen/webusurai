@@ -9,9 +9,14 @@ export interface Location {
   city: string | null
 }
 
+export interface LocState {
+  locKey: keyof Location
+  state: State
+}
+
 export interface GetStateResult {
   loc: Location
-  states: { locKey: keyof Location; state: State }[]
+  states: LocState[]
 }
 
 export interface PostBreakPayload {
