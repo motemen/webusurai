@@ -89,7 +89,6 @@ function App() {
 
   return (
     <>
-      <h1>ウェブ薄氷</h1>
       <main>
         {error ? (
           <p>
